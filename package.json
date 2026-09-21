@@ -1,0 +1,16 @@
+{
+  "name": "nova-strike",
+  "version": "1.0.0",
+  "description": "NOVA STRIKE - single-player tilt-controlled space shooter. Host displays the battle on a screen, pilot flies from their phone using motion tilt.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  }
+}

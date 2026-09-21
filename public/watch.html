@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>Nova Strike — Watch</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a1c; --bg2:#0d1030; --panel:#11143a; --border:#2c3170;
+  --accent:#4fd8ff; --accent2:#ff4fd8; --gold:#ffd24f; --text:#d7dcff; --textdim:#7d83b8;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;user-select:none}
+body{display:flex;flex-direction:column}
+
+#topbar{width:100%;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;background:var(--panel);padding:10px 20px;border-bottom:1px solid var(--border)}
+.game-title{font-family:'Baloo 2',sans-serif;font-size:.85rem;font-weight:800;letter-spacing:.1em;color:var(--accent)}
+.stat{font-family:'Baloo 2',sans-serif;font-size:.85rem;font-weight:700;color:var(--gold)}
+.stat span{color:var(--textdim);font-size:.6rem;letter-spacing:.04em;margin-right:5px}
+
+#arena{position:relative;flex:1;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,var(--bg2),var(--bg) 70%)}
+canvas{display:block;position:absolute;top:0;left:0}
+
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(8,10,28,.95);z-index:50;padding:20px;text-align:center}
+.screen.hidden{display:none}
+.screen-title{font-family:'Baloo 2',sans-serif;font-size:1.6rem;font-weight:800;color:var(--accent)}
+.screen-sub{font-size:.85rem;color:var(--textdim);max-width:420px;line-height:1.6}
+.room-code{font-family:'Baloo 2',sans-serif;font-size:2rem;font-weight:800;letter-spacing:.2em;color:var(--accent2)}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div class="game-title">Nova Strike — Spectating</div>
+  <div style="display:flex;gap:18px">
+    <div class="stat"><span>SCORE</span><span id="s-score">0</span></div>
+    <div class="stat"><span>WAVE</span><span id="s-wave">1</span></div>
+    <div class="stat"><span>HP</span><span id="s-hp">5</span></div>
+  </div>
+</div>
+
+<div id="arena">
+  <canvas id="c"></canvas>
+  <div class="screen" id="screen-connecting">
+    <div class="screen-title">Connecting...</div>
+  </div>
+  <div class="screen hidden" id="screen-lobby">
+    <div class="screen-title">Waiting for launch</div>
+    <div class="screen-sub">The pilot is still calibrating or hasn't connected yet.</div>
+    <div class="room-code" id="room-code-display"></div>
+  </div>
+  <div class="screen hidden" id="screen-error">
+    <div class="screen-title" id="error-title">Something went wrong</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let AW=800,AH=600;
+function resizeCanvas(){
+  const a=document.getElementById('arena');
+  AW=a.clientWidth;AH=a.clientHeight;
+  canvas.width=AW;canvas.height=AH;
+}
+window.addEventListener('resize',resizeCanvas);
+resizeCanvas();
+
+const PAL={ship:'#4fd8ff',bullet:'#c8f8ff',enemyBullet:'#ff5f6d'};
+const PU_ICON={SPEED:'⚡',RAPID:'🔥',DOUBLE:'💥',PIERCE:'🎯',SHIELD:'🛡',REPAIR:'❤'};
+
+let state=null;
+let stars=[];
+function initStars(){
+  stars=[];
+  const n=Math.round((AW*AH)/9000);
+  for(let i=0;i<n;i++) stars.push({x:Math.random()*AW,y:Math.random()*AH,z:.3+Math.random()*1.4,r:.6+Math.random()*1.6});
+}
+initStars();
+window.addEventListener('resize',initStars);
+
+function drawShip(s){
+  if(!s) return;
+  const blinking=s.invuln>0 && Math.floor(s.invuln/90)%2===0;
+  if(blinking) return;
+  ctx.save();
+  ctx.translate(s.x,s.y);
+  if(s.shieldActive){
+    ctx.strokeStyle=PAL.ship;ctx.lineWidth=2;ctx.globalAlpha=.7;
+    ctx.beginPath();ctx.arc(0,0,30,0,7);ctx.stroke();ctx.globalAlpha=1;
+  }
+  ctx.fillStyle=PAL.ship;
+  ctx.beginPath();
+  ctx.moveTo(0,-22);ctx.lineTo(17.6,15.4);ctx.lineTo(0,7.7);ctx.lineTo(-17.6,15.4);
+  ctx.closePath();ctx.fill();
+  ctx.restore();
+}
+
+function draw(){
+  ctx.clearRect(0,0,AW,AH);
+  for(const st of stars){
+    st.y+=st.z*0.7;
+    if(st.y>AH){st.y=-4;st.x=Math.random()*AW;}
+    ctx.fillStyle='rgba(215,220,255,'+(0.25+st.z*0.35).toFixed(2)+')';
+    ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,7);ctx.fill();
+  }
+  if(!state) return;
+
+  for(const p of(state.powerups||[])){
+    ctx.font='18px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(PU_ICON[p.type]||'✦',p.x,p.y);
+  }
+  for(const b of(state.bullets||[])){
+    ctx.fillStyle=PAL.bullet;ctx.fillRect(b.x-2,b.y-8,4,12);
+  }
+  for(const b of(state.enemyBullets||[])){
+    ctx.fillStyle=PAL.enemyBullet;ctx.beginPath();ctx.arc(b.x,b.y,4,0,7);ctx.fill();
+  }
+  for(const a of(state.enemies||[])){
+    ctx.fillStyle=a.color||'#ff4fd8';
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y+a.r);ctx.lineTo(a.x+a.r,a.y-a.r*0.7);ctx.lineTo(a.x,a.y-a.r*0.2);ctx.lineTo(a.x-a.r,a.y-a.r*0.7);
+    ctx.closePath();ctx.fill();
+  }
+  drawShip(state.ship);
+}
+function loop(){ draw(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+
+function showScreen(id){
+  ['screen-connecting','screen-lobby','screen-error'].forEach(s=>{
+    document.getElementById(s).classList.toggle('hidden',s!==id);
+  });
+}
+function hideAllScreens(){
+  ['screen-connecting','screen-lobby','screen-error'].forEach(s=>document.getElementById(s).classList.add('hidden'));
+}
+
+const code=new URLSearchParams(window.location.search).get('code');
+if(!code||!/^\d{6}$/.test(code)){
+  document.getElementById('error-title').textContent='No game code in this link';
+  showScreen('screen-error');
+}else{
+  const socket=io();
+  document.getElementById('room-code-display').textContent=code;
+
+  socket.on('connect',()=>socket.emit('spectate_join',{code}));
+  socket.on('spectate_error',()=>{
+    document.getElementById('error-title').textContent='Game not found';
+    showScreen('screen-error');
+  });
+  socket.on('spectate_ok',()=>{ showScreen('screen-lobby'); });
+
+  socket.on('lobby_update',()=>{ /* just keeps the lobby screen informative */ });
+
+  socket.on('host_state',s=>{
+    state=s;
+    document.getElementById('s-score').textContent=s.score||0;
+    document.getElementById('s-wave').textContent=s.wave||1;
+    document.getElementById('s-hp').textContent=s.ship?s.ship.hp:0;
+    if(s.inLobby){ showScreen('screen-lobby'); }
+    else if(s.gameOver){ hideAllScreens(); }
+    else{ hideAllScreens(); }
+  });
+
+  socket.on('host_disconnected',()=>{
+    document.getElementById('error-title').textContent='The host ended the game';
+    showScreen('screen-error');
+  });
+}
+</script>
+</body>
+</html>
