@@ -1,7 +1,7 @@
 {
   "name": "nova-strike",
   "version": "1.0.0",
-  "description": "NOVA STRIKE - single-player tilt-controlled space shooter. Host displays the battle on a screen, pilot flies from their phone using motion tilt.",
+  "description": "NOVA STRIKE - tilt-controlled space shooter: solo vs alien waves, or duel dogfight two-player mode.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

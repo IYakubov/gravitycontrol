@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════
 //  NOVA STRIKE — SERVER
-//  Express + Socket.io: room codes, single-pilot lobby,
-//  tilt-input relay, spectator broadcast
+//  Express + Socket.io: room codes, solo or duel lobby,
+//  tilt-input relay (slot-tagged), spectator broadcast
 // ═══════════════════════════════════════════════════════
 const express = require('express');
 const http = require('http');
@@ -19,8 +19,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ── ROOM STATE ──
 // rooms[code] = {
 //   hostSocketId,
-//   player: socketId|null,   // the single pilot controller
-//   ready: false,
+//   mode: 'solo' | 'duel',
+//   players: { A: socketId|null, B: socketId|null },
+//   ready: { A: false, B: false },
 //   started: false,
 //   spectatorCount: 0,
 //   lastLobby, lastState
@@ -35,18 +36,35 @@ function genCode() {
   return code;
 }
 
-function roomPresence(room) {
-  return { A: !!room.player };
+function slotsNeeded(mode) {
+  return mode === 'duel' ? ['A', 'B'] : ['A'];
+}
+
+function nextOpenSlot(room) {
+  for (const slot of slotsNeeded(room.mode)) {
+    if (!room.players[slot]) return slot;
+  }
+  return null;
+}
+
+function lobbyData(room) {
+  return {
+    mode: room.mode,
+    A: !!room.players.A,
+    B: !!room.players.B,
+    readyA: room.ready.A,
+    readyB: room.ready.B
+  };
 }
 
 function broadcastLobby(code) {
   const room = rooms[code];
   if (!room) return;
-  const presence = roomPresence(room);
-  const data = { A: presence.A, readyA: room.ready };
+  const data = lobbyData(room);
   room.lastLobby = data;
   if (room.hostSocketId) io.to(room.hostSocketId).emit('game_event', { event: 'lobby_ready_update', data });
-  if (room.player) io.to(room.player).emit('game_event', { event: 'lobby_ready_update', data });
+  if (room.players.A) io.to(room.players.A).emit('game_event', { event: 'lobby_ready_update', data });
+  if (room.players.B) io.to(room.players.B).emit('game_event', { event: 'lobby_ready_update', data });
   io.to(spectatorRoom(code)).emit('lobby_update', data);
 }
 
@@ -54,22 +72,28 @@ function spectatorRoom(code) {
   return code + ':watch';
 }
 
+function allReady(room) {
+  return slotsNeeded(room.mode).every(slot => room.players[slot] && room.ready[slot]);
+}
+
 io.on('connection', (socket) => {
 
   // ── HOST: create a new game ──
-  socket.on('create_game', () => {
+  socket.on('create_game', (opts) => {
+    const mode = (opts && opts.mode === 'duel') ? 'duel' : 'solo';
     const code = genCode();
     rooms[code] = {
       hostSocketId: socket.id,
-      player: null,
-      ready: false,
+      mode,
+      players: { A: null, B: null },
+      ready: { A: false, B: false },
       started: false,
       spectatorCount: 0,
       lastLobby: null,
       lastState: null
     };
     socket.data.hostCode = code;
-    socket.emit('game_created', { code });
+    socket.emit('game_created', { code, mode });
   });
 
   // ── CONTROLLER: join a game by code ──
@@ -83,20 +107,21 @@ io.on('connection', (socket) => {
       socket.emit('join_error', 'game already started');
       return;
     }
-    if (room.player) {
+    const slot = nextOpenSlot(room);
+    if (!slot) {
       socket.emit('join_error', 'room full');
       return;
     }
 
-    room.player = socket.id;
+    room.players[slot] = socket.id;
     socket.data.code = code;
-    socket.data.slot = 'A';
+    socket.data.slot = slot;
     socket.join(code);
 
-    socket.emit('joined', { slot: 'A', code });
+    socket.emit('joined', { slot, code, mode: room.mode });
 
-    io.to(code).emit('player_joined', { slot: 'A', players: roomPresence(room) });
-    if (room.hostSocketId) io.to(room.hostSocketId).emit('player_joined', { slot: 'A', players: roomPresence(room) });
+    io.to(code).emit('player_joined', { slot, players: { A: !!room.players.A, B: !!room.players.B } });
+    if (room.hostSocketId) io.to(room.hostSocketId).emit('player_joined', { slot, players: { A: !!room.players.A, B: !!room.players.B } });
     broadcastLobby(code);
   });
 
@@ -104,40 +129,42 @@ io.on('connection', (socket) => {
   socket.on('rejoin_game', ({ code, slot }) => {
     const room = rooms[code];
     if (!room) return;
-    room.player = socket.id;
+    const useSlot = (slot === 'A' || slot === 'B') ? slot : nextOpenSlot(room);
+    if (!useSlot) return;
+    room.players[useSlot] = socket.id;
     socket.data.code = code;
-    socket.data.slot = 'A';
+    socket.data.slot = useSlot;
     socket.join(code);
-    socket.emit('joined', { slot: 'A', code });
+    socket.emit('joined', { slot: useSlot, code, mode: room.mode });
     broadcastLobby(code);
     if (room.started) {
-      socket.emit('game_start');
+      socket.emit('game_start', { mode: room.mode });
     }
   });
 
-  // ── CONTROLLER: ready up (starts the game immediately — single player) ──
+  // ── CONTROLLER: ready up ──
   socket.on('player_ready', ({ code }) => {
     const room = rooms[code];
     if (!room) return;
-    if (!room.player) return;
-    room.ready = true;
+    const slot = socket.data.slot;
+    if (!slot || !room.players[slot]) return;
+    room.ready[slot] = true;
     broadcastLobby(code);
 
-    if (!room.started) {
+    if (!room.started && allReady(room)) {
       room.started = true;
-      io.to(code).emit('game_start');
-      if (room.hostSocketId) io.to(room.hostSocketId).emit('game_start');
+      io.to(code).emit('game_start', { mode: room.mode });
+      if (room.hostSocketId) io.to(room.hostSocketId).emit('game_start', { mode: room.mode });
     }
   });
 
-  // ── CONTROLLER: tilt input stream — {fwd, strafe} each in [-1,1] ──
+  // ── CONTROLLER: tilt input stream — {fwd, strafe(=turn)} each in [-1,1] ──
   socket.on('ctrl_input', ({ code, fwd, strafe }) => {
     const room = rooms[code];
     if (!room || !room.hostSocketId) return;
-    io.to(room.hostSocketId).emit('ctrl_input', { fwd, strafe });
+    const slot = socket.data.slot || 'A';
+    io.to(room.hostSocketId).emit('ctrl_input', { slot, fwd, strafe });
   });
-
-  // ── HOST: request a soft restart is purely local; no server role needed ──
 
   // ── WATCHER: join as a read-only spectator (no controls) ──
   socket.on('spectate_join', ({ code }) => {
@@ -149,7 +176,7 @@ io.on('connection', (socket) => {
     socket.data.watchCode = code;
     socket.join(spectatorRoom(code));
     room.spectatorCount++;
-    socket.emit('spectate_ok', { code });
+    socket.emit('spectate_ok', { code, mode: room.mode });
     if (room.lastLobby) socket.emit('lobby_update', room.lastLobby);
     if (room.lastState) socket.emit('host_state', room.lastState);
     if (room.hostSocketId) io.to(room.hostSocketId).emit('spectator_count', { count: room.spectatorCount });
@@ -176,7 +203,8 @@ io.on('connection', (socket) => {
 
     if (hostCode && rooms[hostCode]) {
       const room = rooms[hostCode];
-      if (room.player) io.to(room.player).emit('host_disconnected');
+      if (room.players.A) io.to(room.players.A).emit('host_disconnected');
+      if (room.players.B) io.to(room.players.B).emit('host_disconnected');
       io.to(spectatorRoom(hostCode)).emit('host_disconnected');
       delete rooms[hostCode];
     }
@@ -190,11 +218,12 @@ io.on('connection', (socket) => {
 
     if (code && rooms[code]) {
       const room = rooms[code];
-      if (room.player === socket.id) {
-        room.player = null;
-        room.ready = false;
-        if (room.hostSocketId) io.to(room.hostSocketId).emit('player_left', { slot: 'A' });
-        io.to(code).emit('player_left', { slot: 'A' });
+      const slot = socket.data.slot;
+      if (slot && room.players[slot] === socket.id) {
+        room.players[slot] = null;
+        room.ready[slot] = false;
+        if (room.hostSocketId) io.to(room.hostSocketId).emit('player_left', { slot });
+        io.to(code).emit('player_left', { slot });
         broadcastLobby(code);
       }
     }

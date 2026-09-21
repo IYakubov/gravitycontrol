@@ -19,6 +19,8 @@ body{display:flex;flex-direction:column}
 .game-title{font-family:'Baloo 2',sans-serif;font-size:.85rem;font-weight:800;letter-spacing:.1em;color:var(--accent)}
 .stat{font-family:'Baloo 2',sans-serif;font-size:.85rem;font-weight:700;color:var(--gold)}
 .stat span{color:var(--textdim);font-size:.6rem;letter-spacing:.04em;margin-right:5px}
+.stat.b{color:var(--accent2)}
+.stat.a{color:var(--accent)}
 
 #arena{position:relative;flex:1;overflow:hidden;background:radial-gradient(ellipse at 50% 20%,var(--bg2),var(--bg) 70%)}
 canvas{display:block;position:absolute;top:0;left:0}
@@ -33,11 +35,16 @@ canvas{display:block;position:absolute;top:0;left:0}
 <body>
 
 <div id="topbar">
-  <div class="game-title">Nova Strike — Spectating</div>
-  <div style="display:flex;gap:18px">
+  <div class="game-title" id="hdr-title">Nova Strike — Spectating</div>
+  <div style="display:flex;gap:18px" id="stats-solo">
     <div class="stat"><span>SCORE</span><span id="s-score">0</span></div>
     <div class="stat"><span>WAVE</span><span id="s-wave">1</span></div>
     <div class="stat"><span>HP</span><span id="s-hp">5</span></div>
+  </div>
+  <div style="display:none;gap:18px" id="stats-duel">
+    <div class="stat a"><span>PILOT A</span><span id="s-hp-a">5</span></div>
+    <div class="stat"><span>ROUND</span><span id="s-round">1</span></div>
+    <div class="stat b"><span>PILOT B</span><span id="s-hp-b">5</span></div>
   </div>
 </div>
 
@@ -48,7 +55,7 @@ canvas{display:block;position:absolute;top:0;left:0}
   </div>
   <div class="screen hidden" id="screen-lobby">
     <div class="screen-title">Waiting for launch</div>
-    <div class="screen-sub">The pilot is still calibrating or hasn't connected yet.</div>
+    <div class="screen-sub">The pilot(s) are still calibrating or haven't connected yet.</div>
     <div class="room-code" id="room-code-display"></div>
   </div>
   <div class="screen hidden" id="screen-error">
@@ -69,7 +76,7 @@ function resizeCanvas(){
 window.addEventListener('resize',resizeCanvas);
 resizeCanvas();
 
-const PAL={ship:'#4fd8ff',bullet:'#c8f8ff',enemyBullet:'#ff5f6d'};
+const SHIP_R=22;
 const PU_ICON={SPEED:'⚡',RAPID:'🔥',DOUBLE:'💥',PIERCE:'🎯',SHIELD:'🛡',REPAIR:'❤'};
 
 let state=null;
@@ -82,19 +89,30 @@ function initStars(){
 initStars();
 window.addEventListener('resize',initStars);
 
+function drawWalls(){
+  ctx.save();
+  ctx.strokeStyle='rgba(79,216,255,.35)';
+  ctx.lineWidth=3;
+  ctx.shadowColor='rgba(79,216,255,.5)';ctx.shadowBlur=10;
+  const m=SHIP_R+16-SHIP_R*0.4;
+  ctx.strokeRect(m,m,AW-m*2,AH-m*2);
+  ctx.restore();
+}
+
 function drawShip(s){
-  if(!s) return;
+  if(!s||!s.alive) return;
   const blinking=s.invuln>0 && Math.floor(s.invuln/90)%2===0;
   if(blinking) return;
   ctx.save();
   ctx.translate(s.x,s.y);
+  ctx.rotate((s.angle||0)+Math.PI/2);
   if(s.shieldActive){
-    ctx.strokeStyle=PAL.ship;ctx.lineWidth=2;ctx.globalAlpha=.7;
-    ctx.beginPath();ctx.arc(0,0,30,0,7);ctx.stroke();ctx.globalAlpha=1;
+    ctx.strokeStyle=s.color||'#4fd8ff';ctx.lineWidth=2;ctx.globalAlpha=.7;
+    ctx.beginPath();ctx.arc(0,0,SHIP_R+8,0,7);ctx.stroke();ctx.globalAlpha=1;
   }
-  ctx.fillStyle=PAL.ship;
+  ctx.fillStyle=s.color||'#4fd8ff';
   ctx.beginPath();
-  ctx.moveTo(0,-22);ctx.lineTo(17.6,15.4);ctx.lineTo(0,7.7);ctx.lineTo(-17.6,15.4);
+  ctx.moveTo(0,-SHIP_R);ctx.lineTo(SHIP_R*0.8,SHIP_R*0.7);ctx.lineTo(0,SHIP_R*0.35);ctx.lineTo(-SHIP_R*0.8,SHIP_R*0.7);
   ctx.closePath();ctx.fill();
   ctx.restore();
 }
@@ -108,16 +126,22 @@ function draw(){
     ctx.beginPath();ctx.arc(st.x,st.y,st.r,0,7);ctx.fill();
   }
   if(!state) return;
+  drawWalls();
 
   for(const p of(state.powerups||[])){
     ctx.font='18px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillText(PU_ICON[p.type]||'✦',p.x,p.y);
   }
   for(const b of(state.bullets||[])){
-    ctx.fillStyle=PAL.bullet;ctx.fillRect(b.x-2,b.y-8,4,12);
+    ctx.save();
+    ctx.translate(b.x,b.y);
+    if(b.dx!==undefined) ctx.rotate(Math.atan2(b.dy,b.dx));
+    ctx.fillStyle=b.col||'#c8f8ff';
+    ctx.fillRect(-7,-2,14,4);
+    ctx.restore();
   }
   for(const b of(state.enemyBullets||[])){
-    ctx.fillStyle=PAL.enemyBullet;ctx.beginPath();ctx.arc(b.x,b.y,4,0,7);ctx.fill();
+    ctx.fillStyle='#ff5f6d';ctx.beginPath();ctx.arc(b.x,b.y,4,0,7);ctx.fill();
   }
   for(const a of(state.enemies||[])){
     ctx.fillStyle=a.color||'#ff4fd8';
@@ -125,7 +149,10 @@ function draw(){
     ctx.moveTo(a.x,a.y+a.r);ctx.lineTo(a.x+a.r,a.y-a.r*0.7);ctx.lineTo(a.x,a.y-a.r*0.2);ctx.lineTo(a.x-a.r,a.y-a.r*0.7);
     ctx.closePath();ctx.fill();
   }
-  drawShip(state.ship);
+  if(state.ships){
+    drawShip(state.ships.A);
+    drawShip(state.ships.B);
+  }
 }
 function loop(){ draw(); requestAnimationFrame(loop); }
 requestAnimationFrame(loop);
@@ -152,17 +179,33 @@ if(!code||!/^\d{6}$/.test(code)){
     document.getElementById('error-title').textContent='Game not found';
     showScreen('screen-error');
   });
-  socket.on('spectate_ok',()=>{ showScreen('screen-lobby'); });
+  socket.on('spectate_ok',({mode})=>{
+    showScreen('screen-lobby');
+    applyMode(mode);
+  });
 
-  socket.on('lobby_update',()=>{ /* just keeps the lobby screen informative */ });
+  function applyMode(mode){
+    const isDuel=mode==='duel';
+    document.getElementById('stats-solo').style.display=isDuel?'none':'flex';
+    document.getElementById('stats-duel').style.display=isDuel?'flex':'none';
+    document.getElementById('hdr-title').textContent='Nova Strike'+(isDuel?' — Dogfight':'')+' — Spectating';
+  }
+
+  socket.on('lobby_update',({mode})=>{ applyMode(mode); });
 
   socket.on('host_state',s=>{
     state=s;
-    document.getElementById('s-score').textContent=s.score||0;
-    document.getElementById('s-wave').textContent=s.wave||1;
-    document.getElementById('s-hp').textContent=s.ship?s.ship.hp:0;
+    applyMode(s.mode);
+    if(s.mode==='duel'){
+      document.getElementById('s-hp-a').textContent=s.ships&&s.ships.A?s.ships.A.hp:0;
+      document.getElementById('s-hp-b').textContent=s.ships&&s.ships.B?s.ships.B.hp:0;
+      document.getElementById('s-round').textContent=s.round||1;
+    }else{
+      document.getElementById('s-score').textContent=s.score||0;
+      document.getElementById('s-wave').textContent=s.wave||1;
+      document.getElementById('s-hp').textContent=s.ships&&s.ships.A?s.ships.A.hp:0;
+    }
     if(s.inLobby){ showScreen('screen-lobby'); }
-    else if(s.gameOver){ hideAllScreens(); }
     else{ hideAllScreens(); }
   });
 

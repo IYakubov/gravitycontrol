@@ -12,6 +12,7 @@
   --bg:#080a1c; --bg2:#0d1030; --panel:#11143a; --panel2:#161a4a;
   --border:#2c3170; --accent:#4fd8ff; --accent2:#ff4fd8; --gold:#ffd24f;
   --text:#d7dcff; --textdim:#7d83b8; --ok:#3ee08f; --danger:#ff5f6d;
+  --me:#4fd8ff; --me-dark:#1a7fa0;
 }
 html,body{
   height:100%;width:100%;background:var(--bg);color:var(--text);
@@ -35,46 +36,44 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background-im
 #code-input{width:100%;padding:14px 16px;text-align:center;letter-spacing:.3em;background:var(--panel);border:2px solid var(--border);border-radius:16px;color:var(--accent);font-family:'Baloo 2',sans-serif;font-size:1.6rem;font-weight:700;outline:none}
 #code-input:focus{border-color:var(--accent)}
 
-.btn{padding:15px 32px;background:var(--accent);border:none;border-radius:18px;color:#04101a;font-family:'Baloo 2',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.01em;cursor:pointer;transition:all .15s;width:100%;max-width:300px;position:relative;box-shadow:0 5px 0 #1a7fa0}
-.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #1a7fa0}
+.btn{padding:15px 32px;background:var(--me);border:none;border-radius:18px;color:#04101a;font-family:'Baloo 2',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.01em;cursor:pointer;transition:all .15s;width:100%;max-width:300px;position:relative;box-shadow:0 5px 0 var(--me-dark)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--me-dark)}
 .btn.pink{background:var(--accent2);box-shadow:0 5px 0 #a4188e}
 .btn.pink:active{box-shadow:0 2px 0 #a4188e}
 .btn.done{background:var(--ok);box-shadow:0 5px 0 #1f8a54}
 #error-msg{font-size:.72rem;color:var(--danger);min-height:1em;font-weight:700}
 
-.slot-badge{font-family:'Baloo 2',sans-serif;font-size:1.6rem;font-weight:800;padding:14px 32px;border:2px solid var(--accent);border-radius:20px;color:var(--accent);background:var(--panel);letter-spacing:.05em}
-.ready-indicator{display:flex;gap:16px;font-size:.7rem;color:var(--textdim);font-weight:700}
+.slot-badge{font-family:'Baloo 2',sans-serif;font-size:1.6rem;font-weight:800;padding:14px 32px;border:2px solid var(--me);border-radius:20px;color:var(--me);background:var(--panel);letter-spacing:.05em}
+.ready-indicator{display:flex;gap:16px;font-size:.7rem;color:var(--textdim);font-weight:700;flex-wrap:wrap;justify-content:center}
 .ri{display:flex;align-items:center;gap:6px}
+.ri.hidden{display:none}
 .ri-dot{width:10px;height:10px;border-radius:50%;background:var(--border)}
 .ri-dot.on{background:var(--ok)}
 
-/* ── GAUGE ── */
 .gauge-wrap{position:relative;width:220px;height:220px}
 .gauge-ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--border);background:radial-gradient(circle at 50% 50%,var(--panel2),var(--panel) 75%)}
 .gauge-cross{position:absolute;inset:0}
 .gauge-cross::before,.gauge-cross::after{content:'';position:absolute;background:var(--border)}
 .gauge-cross::before{left:0;right:0;top:50%;height:1px;transform:translateY(-.5px)}
 .gauge-cross::after{top:0;bottom:0;left:50%;width:1px;transform:translateX(-.5px)}
-.gauge-label{position:absolute;font-size:.62rem;color:var(--textdim);font-weight:700;letter-spacing:.05em}
+.gauge-label{position:absolute;font-size:.6rem;color:var(--textdim);font-weight:700;letter-spacing:.04em}
 .gl-fwd{top:8px;left:50%;transform:translateX(-50%)}
 .gl-back{bottom:8px;left:50%;transform:translateX(-50%)}
-.gl-left{left:10px;top:50%;transform:translateY(-50%)}
-.gl-right{right:10px;top:50%;transform:translateY(-50%)}
-.gauge-knob{position:absolute;width:34px;height:34px;border-radius:50%;background:var(--accent);
+.gl-left{left:8px;top:50%;transform:translateY(-50%)}
+.gl-right{right:8px;top:50%;transform:translateY(-50%)}
+.gauge-knob{position:absolute;width:34px;height:34px;border-radius:50%;background:var(--me);
   box-shadow:0 0 18px rgba(79,216,255,.75);left:50%;top:50%;transform:translate(-50%,-50%);transition:background .15s}
 .gauge-knob.moving{background:var(--accent2);box-shadow:0 0 18px rgba(255,79,216,.75)}
 
 .settings-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:320px}
 .chip{padding:7px 14px;border-radius:999px;border:2px solid var(--border);background:var(--panel);color:var(--textdim);font-size:.68rem;font-weight:700;cursor:pointer;user-select:none}
-.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(79,216,255,.08)}
+.chip.active{border-color:var(--me);color:var(--me);background:rgba(79,216,255,.08)}
 
 .small-btn{padding:9px 18px;font-size:.7rem;background:var(--panel2);color:var(--text);border:2px solid var(--border);border-radius:14px;font-weight:700;cursor:pointer}
 
-/* ── CONTROLLER SCREEN ── */
 #controller-screen{gap:14px;padding:16px}
 .ctrl-topline{display:flex;justify-content:space-between;align-items:center;width:100%;max-width:340px}
-.ctrl-badge{font-family:'Baloo 2',sans-serif;font-size:.9rem;font-weight:700;color:var(--accent)}
-.hp-mini{font-size:.72rem;color:var(--danger);font-weight:700}
+.ctrl-badge{font-family:'Baloo 2',sans-serif;font-size:.9rem;font-weight:700;color:var(--me)}
 
 #conn-lost-banner{
   display:none;position:fixed;top:0;left:0;right:0;padding:10px;background:var(--danger);
@@ -102,7 +101,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background-im
 <!-- MOTION PERMISSION SCREEN (iOS gate) -->
 <div class="screen hidden" id="perm-screen">
   <div class="game-title">Almost there</div>
-  <div class="sub">Nova Strike steers your ship using your phone's motion sensor. Your browser needs one tap to allow it.</div>
+  <div class="sub">Nova Strike steers your plane using your phone's motion sensor. Your browser needs one tap to allow it.</div>
   <button class="btn" id="perm-btn">Enable Motion Controls</button>
   <div id="perm-error" class="sub" style="color:var(--danger)"></div>
 </div>
@@ -110,20 +109,20 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background-im
 <!-- CALIBRATE SCREEN -->
 <div class="screen hidden" id="calibrate-screen">
   <div class="game-title">Calibrate</div>
-  <div class="sub">Hold the phone upright in front of you, like you're reading it. This will be your neutral position — tilt away from it to fly.</div>
+  <div class="sub">Hold the phone upright in front of you, like you're reading it. This becomes neutral. Tilt <b>forward/back to thrust</b>, tilt <b>left/right to turn</b> — like flying a real plane.</div>
   <div class="gauge-wrap">
     <div class="gauge-ring"></div>
     <div class="gauge-cross">
-      <div class="gauge-label gl-fwd">FWD</div>
-      <div class="gauge-label gl-back">BACK</div>
-      <div class="gauge-label gl-left">LEFT</div>
-      <div class="gauge-label gl-right">RIGHT</div>
+      <div class="gauge-label gl-fwd">THRUST</div>
+      <div class="gauge-label gl-back">REVERSE</div>
+      <div class="gauge-label gl-left">TURN L</div>
+      <div class="gauge-label gl-right">TURN R</div>
     </div>
     <div class="gauge-knob" id="cal-knob"></div>
   </div>
   <div class="settings-row">
     <div class="chip" id="chip-invert-fwd">Invert fwd/back</div>
-    <div class="chip" id="chip-invert-lr">Invert left/right</div>
+    <div class="chip" id="chip-invert-lr">Invert turn</div>
   </div>
   <div class="settings-row">
     <div class="chip" data-sens="35">Gentle</div>
@@ -135,10 +134,11 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background-im
 
 <!-- LOBBY / READY SCREEN -->
 <div class="screen hidden" id="lobby-screen">
-  <div class="slot-badge" id="my-slot-badge">Pilot</div>
+  <div class="slot-badge" id="my-slot-badge">Pilot A</div>
   <div class="sub" id="lobby-status">Calibrated. Ready when you are!</div>
   <div class="ready-indicator">
-    <div class="ri"><div class="ri-dot" id="dot-a"></div><span>Connected</span></div>
+    <div class="ri"><div class="ri-dot" id="dot-a"></div><span>Pilot A</span></div>
+    <div class="ri hidden" id="ri-b"><div class="ri-dot" id="dot-b"></div><span>Pilot B</span></div>
   </div>
   <button class="btn pink" id="ready-btn">Ready for Launch</button>
   <button class="small-btn" id="recalibrate-btn-lobby">Recalibrate</button>
@@ -147,26 +147,26 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;background-im
 <!-- FLIGHT CONTROLLER SCREEN -->
 <div class="screen hidden" id="controller-screen">
   <div class="ctrl-topline">
-    <div class="ctrl-badge" id="ctrl-badge">Pilot</div>
+    <div class="ctrl-badge" id="ctrl-badge">Pilot A</div>
     <button class="small-btn" id="recalibrate-btn">Recalibrate</button>
   </div>
   <div class="gauge-wrap">
     <div class="gauge-ring"></div>
     <div class="gauge-cross">
-      <div class="gauge-label gl-fwd">FWD</div>
-      <div class="gauge-label gl-back">BACK</div>
-      <div class="gauge-label gl-left">LEFT</div>
-      <div class="gauge-label gl-right">RIGHT</div>
+      <div class="gauge-label gl-fwd">THRUST</div>
+      <div class="gauge-label gl-back">REVERSE</div>
+      <div class="gauge-label gl-left">TURN L</div>
+      <div class="gauge-label gl-right">TURN R</div>
     </div>
     <div class="gauge-knob" id="live-knob"></div>
   </div>
-  <div class="sub">Your ship fires automatically — just fly!</div>
+  <div class="sub">Your plane fires automatically — just fly! Watch out for the arena walls, they hurt.</div>
 </div>
 
 <script>
 'use strict';
 const socket=io();
-let myCode=null, gameStarted=false;
+let myCode=null, gameStarted=false, mySlot='A', myMode='solo';
 
 // ═══════════════════════════════════════════════════════
 //  TILT ENGINE
@@ -174,7 +174,7 @@ let myCode=null, gameStarted=false;
 let baseBeta=0, baseGamma=0, calibrated=false;
 let curBeta=0, curGamma=0;
 let invertFwd=false, invertLR=false;
-let sensitivity=24; // degrees for full deflection
+let sensitivity=24;
 
 try{
   invertFwd=localStorage.getItem('nsInvertFwd')==='1';
@@ -185,13 +185,13 @@ try{
 function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
 
 function computeTilt(){
-  let db=curBeta-baseBeta;   // forward/back
-  let dg=curGamma-baseGamma; // left/right
+  let db=curBeta-baseBeta;
+  let dg=curGamma-baseGamma;
   if(invertFwd) db=-db;
   if(invertLR) dg=-dg;
-  const fwd=clamp(-db/sensitivity,-1,1);   // tipping top away from you -> forward
-  const strafe=clamp(dg/sensitivity,-1,1);
-  return{fwd,strafe};
+  const fwd=clamp(-db/sensitivity,-1,1);
+  const turn=clamp(dg/sensitivity,-1,1);
+  return{fwd,strafe:turn};
 }
 
 function onOrientation(e){
@@ -200,28 +200,24 @@ function onOrientation(e){
 }
 window.addEventListener('deviceorientation',onOrientation);
 
-// gauge rendering (shared between calibrate preview + live flight)
 function renderGauge(knobEl,fwd,strafe){
-  const R=90; // usable radius inside the 220px ring
-  const x=strafe*R, y=-fwd*R;
-  knobEl.style.left=(50+ (x/220*100))+'%';
-  knobEl.style.top=(50+ (y/220*100))+'%';
+  const x=strafe*90, y=-fwd*90;
+  knobEl.style.left=(50+(x/220*100))+'%';
+  knobEl.style.top=(50+(y/220*100))+'%';
   const moving=Math.hypot(fwd,strafe)>0.12;
   knobEl.classList.toggle('moving',moving);
 }
 
-let gaugeRAF=null;
 function gaugeLoop(){
   const t=computeTilt();
   const calKnob=document.getElementById('cal-knob');
   const liveKnob=document.getElementById('live-knob');
   if(!document.getElementById('calibrate-screen').classList.contains('hidden')) renderGauge(calKnob,t.fwd,t.strafe);
   if(!document.getElementById('controller-screen').classList.contains('hidden')) renderGauge(liveKnob,t.fwd,t.strafe);
-  gaugeRAF=requestAnimationFrame(gaugeLoop);
+  requestAnimationFrame(gaugeLoop);
 }
 gaugeLoop();
 
-// send tilt to server at a throttled rate while flying
 let sendTimer=null;
 function startSending(){
   if(sendTimer) return;
@@ -235,9 +231,20 @@ function stopSending(){
   if(sendTimer){clearInterval(sendTimer);sendTimer=null;}
   if(myCode) socket.emit('ctrl_input',{code:myCode,fwd:0,strafe:0});
 }
+function calibrateNow(){ baseBeta=curBeta; baseGamma=curGamma; calibrated=true; }
 
-function calibrateNow(){
-  baseBeta=curBeta; baseGamma=curGamma; calibrated=true;
+// ═══════════════════════════════════════════════════════
+//  SLOT COLORING
+// ═══════════════════════════════════════════════════════
+function applySlotColor(slot){
+  const root=document.documentElement;
+  if(slot==='B'){
+    root.style.setProperty('--me','#ff4fd8');
+    root.style.setProperty('--me-dark','#a4188e');
+  }else{
+    root.style.setProperty('--me','#4fd8ff');
+    root.style.setProperty('--me-dark','#1a7fa0');
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -272,17 +279,11 @@ function showScreen(name){
     document.getElementById(id).classList.toggle('hidden',id!==name);
   });
 }
-
 function needsMotionPermission(){
   return typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function';
 }
-
 function goToCalibrationOrPermission(){
-  if(needsMotionPermission()){
-    showScreen('perm-screen');
-  }else{
-    showScreen('calibrate-screen');
-  }
+  showScreen(needsMotionPermission()?'perm-screen':'calibrate-screen');
 }
 
 document.getElementById('perm-btn').addEventListener('click',()=>{
@@ -329,17 +330,21 @@ function doJoin(){
 
 socket.on('join_error',msg=>{ errorMsg.textContent=msg; });
 
-socket.on('joined',({code})=>{
+socket.on('joined',({code,slot,mode})=>{
   hideConnBanner();
-  myCode=code;
-  document.getElementById('my-slot-badge').textContent='Pilot';
-  document.getElementById('ctrl-badge').textContent='Pilot';
+  myCode=code; mySlot=slot||'A'; myMode=mode||'solo';
+  applySlotColor(mySlot);
+  const label='Pilot '+mySlot;
+  document.getElementById('my-slot-badge').textContent=label;
+  document.getElementById('ctrl-badge').textContent=label;
+  document.getElementById('ri-b').classList.toggle('hidden',myMode!=='duel');
+
   if(!gameStarted){
     isReady=false;
     readyBtn.textContent='Ready for Launch';
     readyBtn.classList.remove('done');
     if(calibrated){
-      document.getElementById('dot-a').classList.add('on');
+      document.getElementById(mySlot==='A'?'dot-a':'dot-b').classList.add('on');
       document.getElementById('lobby-status').textContent='Calibrated. Ready when you are!';
       showScreen('lobby-screen');
     }else{
@@ -348,16 +353,12 @@ socket.on('joined',({code})=>{
   }
 });
 
-socket.on('player_joined',()=>{
-  const dot=document.getElementById('dot-a');
+socket.on('player_joined',({slot})=>{
+  const dot=document.getElementById(slot==='A'?'dot-a':'dot-b');
   if(dot) dot.classList.add('on');
 });
 
-socket.on('game_event',({event})=>{
-  if(event==='lobby_ready_update'){ /* single pilot — nothing extra to show */ }
-});
-
-socket.on('game_start',()=>{
+socket.on('game_start',({mode})=>{
   isReady=false;
   showController();
 });
@@ -392,8 +393,8 @@ function hideConnBanner(){ connLostBanner.style.display='none'; }
 socket.on('disconnect',()=>{
   if(myCode) showConnBanner('Connection lost — reconnecting...');
 });
-socket.io.on('reconnect',()=>{ if(myCode) socket.emit('rejoin_game',{code:myCode}); });
-socket.on('connect',()=>{ if(myCode&&gameStarted) socket.emit('rejoin_game',{code:myCode}); });
+socket.io.on('reconnect',()=>{ if(myCode) socket.emit('rejoin_game',{code:myCode,slot:mySlot}); });
+socket.on('connect',()=>{ if(myCode&&gameStarted) socket.emit('rejoin_game',{code:myCode,slot:mySlot}); });
 
 window.addEventListener('blur',stopSending);
 window.addEventListener('visibilitychange',()=>{ if(document.hidden) stopSending(); else if(gameStarted) startSending(); });
